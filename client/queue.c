@@ -3,7 +3,7 @@
 //
 
 
-/** This is file which gives an API for queue of messages **/
+/** This is file which gives an API for queue of messages (read header) **/
 #include <stdio.h>
 #include "queue.h"
 

@@ -93,13 +93,14 @@ static struct lws_protocols protocols[] = {
 
 static int callback_client(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-    char *json = NULL;
+
     switch (reason) {
 
         case LWS_CALLBACK_CLIENT_ESTABLISHED:
             lwsl_info("Success! Connected to server!\n");
             lws_set_timer_usecs(wsi, STATUS_SEND_INTERVAL * LWS_USEC_PER_SEC);
 
+            char *json = NULL;
             asprintf(&json, "{\"type\": \"onconnection\", \"key\": \"%s\"}", SECRET_WS_KEY);
             QUEUE_NewMsg(json);
             free(json);
@@ -109,26 +110,7 @@ static int callback_client(struct lws *wsi, enum lws_callback_reasons reason, vo
         case LWS_CALLBACK_CLIENT_RECEIVE:
             lwsl_info("Got message from server: %.*s\n", (int)len, (char*)in);
 
-            int result = handle_server_command(in);
-
-            const char *cmd_start = in;
-            const char *space = memchr(cmd_start, ' ', len);
-            size_t cmd_len = space ? (size_t)(space - cmd_start) : len;
-
-            char *command = malloc(cmd_len + 1);
-            if (!command) {
-                lwsl_err("Failed to allocate memory!\n");
-                break;
-            }
-            memcpy(command, cmd_start, cmd_len);
-            command[cmd_len] = '\0';
-
-            asprintf(&json, "{\"type\": \"answer\", \"status\": \"%s\", \"oncommand\": \"%s\"}",
-                result == 0 ? "success" : "error", command);
-
-            QUEUE_NewMsg(json);
-            free(json);
-            free(command);
+            handle_server_command(in, len);
             lws_callback_on_writable(wsi);
             break;
 
@@ -164,13 +146,7 @@ static int callback_client(struct lws *wsi, enum lws_callback_reasons reason, vo
         case LWS_CALLBACK_TIMER:
             lwsl_info("Timer fired - sending status...\n");
 
-            /* TODO get status data */
-            int ccd = 10;
-            int sink = 8;
-            char fan[10] = "off";
-            asprintf(&json, "{\"type\": \"info\", \"ccd\": \"%d\", \"sink\": \"%d\", \"fan\": \"%s\" }", ccd, sink, fan);
-            QUEUE_NewMsg(json);
-            free(json);
+            get_camera_status(); // goes to queue
 
             lws_set_timer_usecs(wsi, STATUS_SEND_INTERVAL * LWS_USEC_PER_SEC);
             lws_callback_on_writable(wsi);

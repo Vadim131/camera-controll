@@ -1,11 +1,4 @@
 
-/* Library for camera control through websocket
- * @author: v.davilin@gmail.com
-
- */
-
-
-
 /* This is for compatibility with C
  * first ifdef part for only app.cpp
  */
@@ -87,16 +80,22 @@ extern "C" {
 #endif
 
 /**
- * @brief: handle commands from server by calling c++ camera's API functions,
+ * @brief: handle commands from server by calling c++ camera's API functions, and add new msg with answer to queue
  * @param command: it goes from server and can be one of this several types:
  *                     1) connect
  *                     2) disconnect
- *                     3) set
- *                     4) phototask
+ *                     3) set + params (example 'set 10 10 off' )
+ *                     4) phototask + params
  *                     5) cancel
- * @return int (bool) 0 or 1 cause it goes to c-func. this value is usually send to server
+ * @return int (bool) 0 - fail  or 1 - success cause it goes to c-func. this value is usually send to server
  */
-int  handle_server_command(const char* command);
+void handle_server_command(const char* command, size_t len);
+
+/**
+ * @brief add new msg with status to queue
+ * @return int (bool) 0 -fail or 1 -success
+ */
+void get_camera_status(void);
 
 #ifdef __cplusplus
     }

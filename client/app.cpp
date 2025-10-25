@@ -1,9 +1,13 @@
 // Project headres
 #include "app.h"
 
+/* Let c++ write json messages in queue */
+#include "queue.h"
 
-const float MIN_TEMP = 0, MAX_TEMP = 50;
+const float MIN_TEMP = 0;
+const float MAX_TEMP = 50;
 const int TIME = 10;
+static Camera CAMERA;
 
 std::string getCurrentTimeAsString()
 {
@@ -624,7 +628,63 @@ bool Camera::SaveImage(unsigned short* image, int cols, int rows, std::string di
 }
 
 
-int handle_server_command(const char *command) {
-	return 0;
+
+/* This is used for adding json-type string in queue */
+static void add_answer_to_queue(const std::string& command, bool success) {
+    std::string json = "{\"type\":\"answer\",\"status\":\""
+                     + (success ? std::string("success") : std::string("error"))
+                     + "\",\"oncommand\":\""
+                     + command
+                     + "\"}";
+    QUEUE_NewMsg(json.c_str()); // queue.c
+}
+
+/* Functions which are called from main.c */
+#include <cstring>
+void handle_server_command(const char* msg, size_t len) {
+    if (!msg || len == 0) {
+		return;
+    }
+
+	/* get command TODO get params*/
+    const char* space = static_cast<const char*>(memchr(msg, ' ', len));
+    size_t cmd_len = space ? static_cast<size_t>(space - msg) : len;
+
+    std::string command(msg, cmd_len);
+
+    /* Command handling */
+    if (command == "connect") {
+        bool status = CAMERA.Connect();
+        add_answer_to_queue("connect", status);
+
+    }
+    else if (command == "disconnect") {
+        bool status = CAMERA.Disconnect();
+        add_answer_to_queue("disconnect", status);
+
+    }
+    else if (command == "cancel") {
+        bool status = CAMERA.StopPhoto();
+        add_answer_to_queue("cancel", status);
+
+    }
+	else if (command == "set") {
+		// TODO установить параметры
+		add_answer_to_queue("set", true);
+	}
+    else if (command == "phototask") {
+        // TODO запуск фотографии
+        add_answer_to_queue("phototask", true);
+    }
+    else {
+        // shit happens
+        return;
+    }
+}
+
+
+void get_camera_status(void) {
+
+
 }
 
